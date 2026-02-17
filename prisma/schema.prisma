@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Service {
+  id            String      @id @db.VarChar(100)
+  baseUrl       String
+  publicKey     String      @db.Text
+  status        ServiceStatus @default(OFFLINE)
+  lastHeartbeat DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  capabilities  Capability[]
+}
+
+model Capability {
+  id            String   @id @default(uuid())
+  name          String
+  method        HttpMethod
+  path          String
+  inputSchema   Json?
+  outputSchema  Json?
+
+  executionMode ExecutionMode @default(SYNC)
+  timeoutMs     Int?          // only for SYNC
+  retryable     Boolean       @default(true)
+
+  serviceId     String
+  service       Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([name, serviceId])
+}
+
+enum ExecutionMode {
+  SYNC
+  ASYNC
+}
+
+
+enum ServiceStatus {
+  ONLINE
+  OFFLINE
+}
+
+enum HttpMethod {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+}
