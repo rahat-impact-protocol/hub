@@ -72,7 +72,7 @@ export class ServicesService implements OnModuleInit {
 
     for (const service of services) {
       try {
-        const healthUrl = `${service.baseUrl}/registry/health`;
+        const healthUrl = `${service.baseUrl}/health`;
         let isHealthy = false;
 
         try {

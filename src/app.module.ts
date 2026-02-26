@@ -7,6 +7,7 @@ import { ServicesModule } from './services/services.module';
 import { PrismaModule } from 'prisma/prisma.module';
 import { RequestModule } from './request/request.module';
 import { ProcessorModule } from './processor/processor.module';
+import { ResponseModule } from './response/response.module';
 
 @Module({
   imports: [
@@ -15,12 +16,14 @@ import { ProcessorModule } from './processor/processor.module';
       connection: {
         host: process.env.REDIS_HOST || 'localhost',
         port: parseInt(process.env.REDIS_PORT || '6380'),
+        password:process.env.REDIS_PASSWORD || ''
       },
     }),
     ServicesModule,
     PrismaModule,
     RequestModule,
     ProcessorModule,
+    ResponseModule,
   ],
   controllers: [AppController],
   providers: [AppService],

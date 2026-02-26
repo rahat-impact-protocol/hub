@@ -2,13 +2,19 @@ import { IsString, IsOptional } from 'class-validator';
 
 export class CreateRequestDto {
   @IsString()
+  version:string
+
+  @IsString()
   serviceId: string;
 
   @IsString()
   capability: string;
 
   @IsString()
-  payload: string; // Encrypted payload as string
+  senderId:string
+
+  @IsString()
+  message: string; // Encrypted payload as string
 
   @IsString()
   @IsOptional()

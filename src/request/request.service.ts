@@ -28,29 +28,40 @@ export class RequestService {
   ) {}
 
   async createRequest(createRequestDto: CreateRequestDto) {
-    const { serviceId, capability, payload, payment } = createRequestDto;
+    const { serviceId, capability, message, senderId,payment } = createRequestDto;
 
     const validatedEndpoint = await this.getValidatedEndpoint(
       { serviceId, capability },
-      payload,
+      message,
     );
+
+    const data = {
+      message,
+      serviceId,
+      senderId
+    }
 
     if (validatedEndpoint.executionMode === 'SYNC') {
       if (payment !== undefined) {
-        return this.makeRequest(validatedEndpoint, payload, payment);
+        return this.makeRequest(validatedEndpoint, data, payment);
       }
-      return this.makeRequest(validatedEndpoint, payload);
+      return this.makeRequest(validatedEndpoint, data);
     }
 
     const jobData: {
       url: string;
       method: HttpMethod;
-      payload: string;
+      message: string;
       payment?: string;
+      serviceId:string;
+      senderId: string;
     } = {
       url: validatedEndpoint.url,
       method: validatedEndpoint.method,
-      payload,
+      message,
+      serviceId,
+      senderId,
+
     };
 
     if (payment !== undefined) {
@@ -68,7 +79,7 @@ export class RequestService {
 
   private async makeRequest(
     endpoint: ValidatedEndpoint,
-    payload: string,
+    payload: any,
     payment?: string,
   ) {
     const data: { payload: string; payment?: string } = { payload };
@@ -113,7 +124,7 @@ export class RequestService {
     }
 
     return {
-      url: `${capability.service.baseUrl}${capability.path}`,
+      url: `${capability.service.baseUrl}/${capability.path}`,
       method: capability.method,
       executionMode: capability.executionMode,
     };
