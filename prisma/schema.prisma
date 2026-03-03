@@ -17,6 +17,7 @@ model Service {
   updatedAt     DateTime    @updatedAt
 
   capabilities  Capability[]
+  serviceTags   String[]
 }
 
 model Capability {

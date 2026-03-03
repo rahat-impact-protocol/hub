@@ -18,5 +18,10 @@ export class CreateRequestDto {
 
   @IsString()
   @IsOptional()
+  callbackUrl: string
+
+  @IsString()
+  @IsOptional()
   payment: string;
+
 }

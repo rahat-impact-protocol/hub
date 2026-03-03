@@ -28,7 +28,7 @@ export class RequestService {
   ) {}
 
   async createRequest(createRequestDto: CreateRequestDto) {
-    const { serviceId, capability, message, senderId,payment } = createRequestDto;
+    const { serviceId, capability, message, senderId,payment,callbackUrl } = createRequestDto;
 
     const validatedEndpoint = await this.getValidatedEndpoint(
       { serviceId, capability },
@@ -55,19 +55,21 @@ export class RequestService {
       payment?: string;
       serviceId:string;
       senderId: string;
+      callbackUrl:string;
     } = {
       url: validatedEndpoint.url,
       method: validatedEndpoint.method,
       message,
       serviceId,
       senderId,
+      callbackUrl,
 
     };
 
     if (payment !== undefined) {
       jobData.payment = payment;
-    }
 
+    }
     const job = await this.requestQueue.add(PROCESSOR_JOB.REQUEST, jobData);
 
     return {
@@ -86,6 +88,7 @@ export class RequestService {
     if (payment !== undefined) {
       data.payment = payment;
     }
+
 
     const response = await httpClient.request({
       url: endpoint.url,

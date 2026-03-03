@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { httpClient } from '../common/http-client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -6,20 +11,24 @@ import { CreateServiceDto } from './dto/create-service.dto';
 
 @Injectable()
 export class ServicesService implements OnModuleInit {
+   
   private readonly logger = new Logger(ServicesService.name);
   constructor(private readonly prisma: PrismaService) {}
 
   onModuleInit() {
-    this.logger.log('ServicesService initialized - Cron job should be registered');
+    this.logger.log(
+      'ServicesService initialized - Cron job should be registered',
+    );
   }
 
   async create(createServiceDto: CreateServiceDto) {
-    const { capabilities, ...serviceData } = createServiceDto;
+    const { capabilities, serviceTags, ...serviceData } = createServiceDto;
 
     return this.prisma.service.create({
       data: {
         ...serviceData,
         status: 'OFFLINE',
+        serviceTags: serviceTags || [],
         capabilities: capabilities
           ? {
               create: capabilities.map((cap) => ({
@@ -60,63 +69,77 @@ export class ServicesService implements OnModuleInit {
     return service.capabilities;
   }
 
+   async getServicesByCapabilityNames(capabilityName?: string) {
+      const services = await this.prisma.service.findMany({
+        include: { capabilities: true },
+      });
+      if (!capabilityName) {
+        return services;
+      }
+      return services
+        .map(service => ({
+          ...service,
+          capabilities: service.capabilities.filter(cap => cap.name === capabilityName),
+        }))
+        .filter(service => service.capabilities.length > 0);
+    }
   @Cron('*/5 * * * *')
   async checkHealth() {
     this.logger.log('Health check cron job starteds');
     try {
       const services = await this.prisma.service.findMany();
       this.logger.log(`Checking health for ${services.length} services`);
-    const results: Array<{
-      name: string;
-    }> = [];
+      const results: Array<{
+        name: string;
+      }> = [];
 
-    for (const service of services) {
-      try {
-        const healthUrl = `${service.baseUrl}/health`;
-        let isHealthy = false;
-
+      for (const service of services) {
         try {
-          const response = await httpClient.get(healthUrl, {
-            timeout: 5000,
-            headers: {
-              'Accept': 'application/json',
+          const healthUrl = `${service.baseUrl}/health`;
+          let isHealthy = false;
+
+          try {
+            const response = await httpClient.get(healthUrl, {
+              timeout: 5000,
+              headers: {
+                Accept: 'application/json',
+              },
+            });
+
+            if (response.status >= 200 && response.status < 300) {
+              isHealthy = true;
+            }
+          } catch (error) {
+            isHealthy = false;
+          }
+
+          const now = new Date();
+          await this.prisma.service.update({
+            where: { id: service.id },
+            data: {
+              status: isHealthy ? 'ONLINE' : 'OFFLINE',
+              lastHeartbeat: isHealthy ? now : service.lastHeartbeat,
             },
           });
 
-          if (response.status >= 200 && response.status < 300) {
-            isHealthy = true;
-          }
+          results.push({
+            name: service.id,
+          });
         } catch (error) {
-          isHealthy = false;
+          // If health check fails completely, mark as offline
+          await this.prisma.service.update({
+            where: { id: service.id },
+            data: {
+              status: 'OFFLINE',
+              lastHeartbeat: service.lastHeartbeat, // Don't update heartbeat if check failed
+            },
+          });
+
+          results.push({
+            name: service.id,
+          });
         }
-
-        const now = new Date();
-        await this.prisma.service.update({
-          where: { id: service.id },
-          data: {
-            status: isHealthy ? 'ONLINE' : 'OFFLINE',
-            lastHeartbeat: isHealthy ? now : service.lastHeartbeat,
-          },
-        });
-
-        results.push({
-          name: service.id,
-        });
-      } catch (error) {
-        // If health check fails completely, mark as offline
-        await this.prisma.service.update({
-          where: { id: service.id },
-          data: {
-            status: 'OFFLINE',
-            lastHeartbeat: service.lastHeartbeat, // Don't update heartbeat if check failed
-          },
-        });
-
-        results.push({
-          name: service.id,
-        });
       }
-    }
 
       return {
         checkedAt: new Date(),
@@ -124,9 +147,11 @@ export class ServicesService implements OnModuleInit {
         results,
       };
     } catch (error) {
-      this.logger.error(`Error in health check cron job: ${error instanceof Error ? error.message : 'Unknown error'}`, error instanceof Error ? error.stack : '');
+      this.logger.error(
+        `Error in health check cron job: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : '',
+      );
       throw error;
     }
   }
-
 }

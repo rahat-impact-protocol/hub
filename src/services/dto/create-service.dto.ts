@@ -47,5 +47,10 @@ export class CreateServiceDto {
   @ValidateNested({ each: true })
   @Type(() => CreateCapabilityDto)
   capabilities?: CreateCapabilityDto[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  serviceTags?: string[];
 }
 
