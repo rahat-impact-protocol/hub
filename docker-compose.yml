@@ -1,10 +1,8 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:15
-    container_name: registry-postgres
-    restart: always
+    container_name: hub-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: registry_user
       POSTGRES_PASSWORD: registry_pass
@@ -13,16 +11,43 @@ services:
       - "5585:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U registry_user -d registry_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: registry-redis
-    restart: always
+    container_name: hub-redis
+    restart: unless-stopped
     ports:
       - "6380:6379"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bullboard:
+    image: deadly0/bull-board:latest
+    container_name: hub-bullboard
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_USE_TLS: "false"
+      BULL_PREFIX: bull
+      USER_LOGIN: admin
+      USER_PASSWORD: admin
+    ports:
+      - "3001:3000"
 
 volumes:
   postgres_data:
