@@ -1,36 +1,105 @@
 # Impact Protocol Hub
 
-The **Impact Protocol Hub** acts as a central registry and communication gateway for services within the Impact Protocol ecosystem. It enables secure service discovery, routing, and health monitoring while forwarding encrypted requests between services.
+The Impact Protocol Hub is a service registry and communication gateway for Impact Protocol services. It validates target capabilities, routes payloads, and executes requests either synchronously or through Redis-backed queues.
 
 ## Overview
 
-The hub serves the following purposes:
+The hub is responsible for:
 
-- Acts as a **service registry**
-- Functions as a **gateway for inter-service communication**
-- Stores **service metadata and payment configuration**
-- Performs **health checks for registered services**
-- Forwards **encrypted messages** without accessing payload contents
+- Service and capability lookup via database records
+- Gateway-style request forwarding between services
+- Optional asynchronous processing with BullMQ
+- Forwarding response callbacks through a dedicated response queue
+- Health and status-aware routing (only ONLINE services are routed)
 
-Services communicate with each other **through the hub**, rather than directly, ensuring standardized routing and coordination.
+## Request API
 
-## Service Registry Data
+### POST /request
 
-The hub stores the following information for each registered service:
+Controller: `RequestController.createRequest()`
 
-- Service ID
-- Service name
-- Route
-- Base URL
-- Payment address
-- Payment type
-- Payment amount
+This endpoint receives a request payload and delegates processing to `RequestService.createRequest()`.
 
-> Note: The hub does **not decrypt or inspect messages** — it only forwards encrypted payloads.
+Expected body (`CreateRequestDto`):
+
+- `version`: string
+- `serviceId`: string
+- `capability`: string
+- `senderId`: string
+- `message`: string (encrypted payload)
+- `callbackUrl?`: string
+- `payment?`: string
+
+Runtime behavior:
+
+1. Hub looks up capability by `(serviceId, capability)`.
+2. Hub validates that the target service is `ONLINE`.
+3. Hub builds target endpoint as `service.baseUrl/capability.path` and uses capability HTTP method.
+4. Execution mode decides flow:
+	 - `SYNC`: hub immediately calls target endpoint and returns target response.
+	 - Async mode: hub enqueues a job on `request` queue and returns `{ success, message, jobId }`.
+
+## Response API
+
+### POST /response
+
+Controller: `ResponseController.recieveResponse()`
+
+This endpoint accepts downstream responses and delegates to `ResponseService.followResponse()`.
+
+Expected body (current runtime fields):
+
+- `status`
+- `responsePayload`
+- `responseSender`
+- `responseReceiver`
+
+Runtime behavior:
+
+1. Hub resolves receiver service by `responseReceiver`.
+2. Hub builds callback URL as `<receiverService.baseUrl>/response`.
+3. Hub enqueues a `response` job with `method: 'POST'`, URL, and response payload fields.
+4. Hub returns queued acknowledgment with `jobId`.
+
+## Queue Implementation Flow (BullMQ)
+
+The hub defines two queues:
+
+- `request` queue (job name: `request`)
+- `response` queue (job name: `response`)
+
+Processors:
+
+- `RequestProcessor` consumes `request` jobs.
+- `ResponseProcessor` consumes `response` jobs.
+
+Both processors:
+
+- Use `WorkerHost` from `@nestjs/bullmq`
+- Dispatch by `job.name`
+- Perform outbound HTTP request using shared `httpClient`
+- Emit worker lifecycle logs on `active`, `completed`, and `failed`
+
+End-to-end request flow:
+
+1. Client sends `POST /request`.
+2. Hub validates capability and execution mode.
+3. If sync, hub calls target immediately and returns response.
+4. If async, hub enqueues `request` job and returns `jobId`.
+5. `RequestProcessor` picks job and performs outbound call.
+6. Target service can later submit `POST /response`.
+7. Hub enqueues `response` job.
+8. `ResponseProcessor` forwards response data to `<receiverBaseUrl>/response`.
+
+## Infrastructure Notes
+
+- Queue backend: Redis (configured via `BullModule.forRoot`)
+- Redis config env vars:
+	- `REDIS_HOST` (default: `localhost`)
+	- `REDIS_PORT` (default: `6380`)
+	- `REDIS_PASSWORD` (default: empty)
 
 ## Running the Hub Locally
-
-Follow these steps to run the hub service:
 
 ```bash
 # Clone the repository
@@ -48,12 +117,3 @@ pnpm install
 # Start the development server
 pnpm start:dev
 ```
-
-## Purpose
-
-The Impact Protocol Hub provides a **single coordination layer** that simplifies:
-
-- Service registration
-- Secure service-to-service communication
-- Payment configuration discovery
-- System observability through health checks
