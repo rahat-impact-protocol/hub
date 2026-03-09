@@ -38,7 +38,8 @@ export class RequestService {
     const data = {
       message,
       serviceId,
-      senderId
+      senderId,
+      projectId: createRequestDto?.projectId
     }
 
     if (validatedEndpoint.executionMode === 'SYNC') {
@@ -56,6 +57,7 @@ export class RequestService {
       serviceId:string;
       senderId: string;
       callbackUrl:string;
+      projectId?:string
     } = {
       url: validatedEndpoint.url,
       method: validatedEndpoint.method,
@@ -63,6 +65,7 @@ export class RequestService {
       serviceId,
       senderId,
       callbackUrl,
+      projectId:createRequestDto?.projectId
 
     };
 
