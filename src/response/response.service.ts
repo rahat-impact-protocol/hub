@@ -12,7 +12,7 @@ export class ResponseService {
   ) {}
 
   async followResponse(data: any) {
-    const { status, responsePayload, responseSender, responseReceiver } = data;
+    const { status, responsePayload, responseSender, responseReceiver,projectId,actionPerformed } = data;
     const serviceDetails = await this.prisma.service.findUnique({
       where: {
         id: responseReceiver,
@@ -26,7 +26,9 @@ export class ResponseService {
         url,
         status,
         responsePayload,
-        responseSender
+        responseSender,
+        projectId,
+        actionPerformed
     }
 
     const job = await this.responseQueue.add(PROCESSOR_JOB.RESPONSE, responseData);

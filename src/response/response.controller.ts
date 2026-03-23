@@ -7,7 +7,7 @@ export class ResponseController {
     constructor(private readonly responseService:ResponseService){}
 
     @Post('')
-    recieveResponse(@Body()data:any){
+    recieveResponse(@Body()data:any) {
     return this.responseService.followResponse(data);
 
     }
