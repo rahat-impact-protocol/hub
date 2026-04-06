@@ -1,11 +1,11 @@
 services:
   postgres:
     image: postgres:15
-    container_name: hub-postgres
+    container_name: rahat-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: registry_user
-      POSTGRES_PASSWORD: registry_pass
+      POSTGRES_USER: rahat_user
+      POSTGRES_PASSWORD: rahat_pass
       POSTGRES_DB: registry_db
     ports:
       - "5585:5432"
@@ -19,7 +19,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: hub-redis
+    container_name: rahat-redis
     restart: unless-stopped
     ports:
       - "6380:6379"
@@ -34,7 +34,7 @@ services:
 
   bullboard:
     image: deadly0/bull-board:latest
-    container_name: hub-bullboard
+    container_name: rahat-bullboard
     restart: unless-stopped
     depends_on:
       redis:
