@@ -1,6 +1,6 @@
 export const PROCESSOR = {
-  REQUEST: 'request',
-  RESPONSE: 'response',
+  REQUEST: 'hubrequest',
+  RESPONSE: 'hubresponse',
 } as const;
 
 export const PROCESSOR_JOB = {
