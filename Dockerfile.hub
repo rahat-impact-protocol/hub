@@ -4,7 +4,8 @@ WORKDIR /app
 COPY ./package.json ./
 RUN npm i -g pnpm@9.15.2 && pnpm install
 
-COPY ./dist ./
+COPY . .
+RUN pnpm build
 RUN pnpm prisma:generate
 
 # --- Final minimal image ---
@@ -19,4 +20,4 @@ COPY --from=builder --chown=appuser:appgroup /app/package.json ./
 
 USER appuser
 
-CMD ["node", "src/main.js"]
+CMD ["node", "dist/main.js"]
