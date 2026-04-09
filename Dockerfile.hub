@@ -21,4 +21,4 @@ COPY --from=builder --chown=appuser:appgroup /app/package.json ./
 
 USER appuser
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]
