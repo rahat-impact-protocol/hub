@@ -9,8 +9,8 @@ async function bootstrap() {
 
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
-      .setTitle('Token Disbursement Service')
-      .setDescription('API service for Token Disbursement')
+      .setTitle('Rahat Impact Hub Service')
+      .setDescription('API service for Rahat Impact Hub Service')
       .setVersion('1.0')
       // .addBearerAuth(
       //   { type: 'http', scheme: 'bearer', bearerFormat: APP.JWT_BEARER },
