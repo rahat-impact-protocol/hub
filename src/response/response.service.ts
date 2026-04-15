@@ -13,11 +13,14 @@ export class ResponseService {
 
   async followResponse(data: any) {
     const { status, responsePayload, responseSender, responseReceiver,projectId,actionPerformed } = data;
+    console.log({responseReceiver})
     const serviceDetails = await this.prisma.service.findUnique({
       where: {
         id: responseReceiver,
       },
     });
+
+    console.log({serviceDetails})
 
     const url = `${serviceDetails?.baseUrl}/response`;
 
