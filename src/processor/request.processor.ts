@@ -8,7 +8,7 @@ import { PROCESSOR, PROCESSOR_JOB } from '../common/constants/processor';
 interface RequestJobData {
   url: string;
   method: HttpMethod;
-  message: string; // Encrypted payload as string
+  payload: JSON; // Encrypted payload as string
 }
 
 @Injectable()
@@ -36,7 +36,7 @@ export class RequestProcessor extends WorkerHost {
       const response = await httpClient.request({
         url: data.url,
         method: data.method,
-        data: data ,
+        data: data?.payload ,
       });
 
       return {

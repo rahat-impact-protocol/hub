@@ -28,7 +28,8 @@ export class RequestService {
   ) {}
 
   async createRequest(createRequestDto: CreateRequestDto) {
-    const { serviceId, capability, message, senderId,payment,callbackUrl } = createRequestDto;
+    const { serviceId, capability, message, senderId, payment, callbackUrl } =
+      createRequestDto;
 
     const validatedEndpoint = await this.getValidatedEndpoint(
       { serviceId, capability },
@@ -39,8 +40,8 @@ export class RequestService {
       message,
       serviceId,
       senderId,
-      projectId: createRequestDto?.projectId
-    }
+      projectId: createRequestDto?.projectId,
+    };
 
     if (validatedEndpoint.executionMode === 'SYNC') {
       if (payment !== undefined) {
@@ -52,29 +53,30 @@ export class RequestService {
     const jobData: {
       url: string;
       method: HttpMethod;
-      message: string;
       payment?: string;
-      serviceId:string;
-      senderId: string;
-      callbackUrl:string;
-      projectId?:string
+      payload: {
+        message: string;
+        serviceId: string;
+        senderId: string;
+        callbackUrl: string;
+        projectId?: string;
+      };
     } = {
       url: validatedEndpoint.url,
       method: validatedEndpoint.method,
-      message,
-      serviceId,
-      senderId,
-      callbackUrl,
-      projectId:createRequestDto?.projectId
-
+      payload: {
+        message,
+        serviceId,
+        senderId,
+        callbackUrl,
+        projectId: createRequestDto?.projectId,
+      },
     };
 
     if (payment !== undefined) {
       jobData.payment = payment;
-
     }
     const job = await this.requestQueue.add(PROCESSOR_JOB.REQUEST, jobData);
-
     return {
       success: true,
       message: 'Request queued for processing',
@@ -92,12 +94,12 @@ export class RequestService {
       data.payment = payment;
     }
 
-
     const response = await httpClient.request({
       url: endpoint.url,
       method: endpoint.method,
-      data,
+      data: data,
     });
+
     return response.data;
   }
 

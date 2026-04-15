@@ -12,29 +12,36 @@ export class ResponseService {
   ) {}
 
   async followResponse(data: any) {
-    const { status, responsePayload, responseSender, responseReceiver,projectId,actionPerformed } = data;
-    console.log({responseReceiver})
+    const {
+      status,
+      responsePayload,
+      responseSender,
+      responseReceiver,
+      projectId,
+      actionPerformed,
+    } = data;
     const serviceDetails = await this.prisma.service.findUnique({
       where: {
         id: responseReceiver,
       },
     });
 
-    console.log({serviceDetails})
-
     const url = `${serviceDetails?.baseUrl}/response`;
 
     const responseData = {
-        method:'POST',
-        url,
-        status,
-        responsePayload,
-        responseSender,
-        projectId,
-        actionPerformed
-    }
+      method: 'POST',
+      url,
+      status,
+      responsePayload,
+      responseSender,
+      projectId,
+      actionPerformed,
+    };
 
-    const job = await this.responseQueue.add(PROCESSOR_JOB.RESPONSE, responseData);
+    const job = await this.responseQueue.add(
+      PROCESSOR_JOB.RESPONSE,
+      responseData,
+    );
     return {
       success: true,
       message: 'Request queued for processing',
