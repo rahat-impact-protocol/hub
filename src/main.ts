@@ -2,10 +2,14 @@ import { NestApplication, NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const _logger = new Logger(NestApplication.name);
+
+  // Parse bracket-style query strings (e.g. data[query][page]=1) into nested objects.
+  app.set('query parser', 'extended');
 
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()

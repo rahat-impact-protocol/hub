@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query } from '@nestjs/common';
 import { RequestService } from './request.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 
@@ -9,5 +9,10 @@ export class RequestController {
   @Post('')
   createRequest(@Body() createRequestDto: CreateRequestDto) {
     return this.requestService.createRequest(createRequestDto);
+  }
+
+  @Get('')
+  forwardGetRequest(@Query() query: any) {
+    return this.requestService.forwardGetRequest(query);
   }
 }

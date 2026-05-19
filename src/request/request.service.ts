@@ -31,10 +31,10 @@ export class RequestService {
     const { serviceId, capability, message, senderId, payment, callbackUrl } =
       createRequestDto;
 
-    const validatedEndpoint = await this.getValidatedEndpoint(
-      { serviceId, capability },
-      message,
-    );
+    const validatedEndpoint = await this.getValidatedEndpoint({
+      serviceId,
+      capability,
+    });
 
     const data = {
       message,
@@ -103,10 +103,10 @@ export class RequestService {
     return response.data;
   }
 
-  private async getValidatedEndpoint(
-    target: { serviceId: string; capability: string },
-    payload: string, // Encrypted payload as string
-  ): Promise<ValidatedEndpoint> {
+  private async getValidatedEndpoint(target: {
+    serviceId: string;
+    capability: string;
+  }): Promise<ValidatedEndpoint> {
     // Find the capability
     const capability = await this.prisma.capability.findFirst({
       where: {
@@ -136,5 +136,20 @@ export class RequestService {
       method: capability.method,
       executionMode: capability.executionMode,
     };
+  }
+
+  async forwardGetRequest(requestData: any) {
+    const { serviceId, capability, data } = requestData;
+    const { requestParam, query } = data;
+    const validatedEndpoint = await this.getValidatedEndpoint({
+      serviceId,
+      capability,
+    });
+    const url = requestParam
+      ? `${validatedEndpoint.url}/${requestParam}`
+      : validatedEndpoint.url;
+
+    const response = await httpClient.get(url, { params: query });
+    return response.data;
   }
 }
